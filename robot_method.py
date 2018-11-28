@@ -106,15 +106,6 @@ if __name__ == '__main__':
     sys_state.need_to_read_plate = False
     sys_state.mounted_tips = None
 
-    def pos_for_lagoon(lagoon_idx):
-        return lagoon_plate, lagoon_idx
-
-    def tip_pos_for_lagoon(lagoon_idx):
-        return mixing_tips, lagoon_idx
-
-    def culture_corral_pos_for_lagoon(lagoon_idx):
-        return culture_corral, lagoon_idx
-
     reader_plate_gen = iter(reader_plates)
     inducer_tip_pos_gen = iter(zip([inducer_tips] * 96, range(96)))
 
@@ -126,9 +117,6 @@ if __name__ == '__main__':
             except StopIteration:
                 pass
         return poss
-
-    def bleach_pos_for_lagoon(lagoon_idx):
-        return bleach_site, 88 + lagoon_idx % 8 # dispensing into rightmost column only so within range of 1ml channels
 
     def change_96_tips(ham_int, new_tips): # None is an acceptable argument
         if sys_state.mounted_tips is new_tips or sys_state.mounted_tips == new_tips:
@@ -197,7 +185,7 @@ if __name__ == '__main__':
         aspirate_96(ham_int, culture_reservoir, cycle_replace_vol, mixCycles=6, mixVolume=100, liquidHeight=.5, airTransportRetractDist=30)
         waffle_clean_thread = run_async(lambda: (shaker.start(300), pump_int.empty(culture_supply_vol), pump_int.bleach_clean(), shaker.stop()))
         dispense_96(ham_int, lagoon_plate, cycle_replace_vol, liquidHeight=lagoon_fly_disp_height, dispenseMode=9, airTransportRetractDist=30) # mode: blowout
-        put_96_tips(ham_int, culture_tips, immediately=True) # from put_96_tips(ham_int, culture_corral, immediately=True) This is change 1 of 3 from last time
+        put_96_tips(ham_int, culture_tips, immediately=True)
 
         logging.info('\n##### Mixing lagoons.')
         if sys_state.need_to_read_plate:
@@ -223,8 +211,6 @@ if __name__ == '__main__':
         def bleach():
             change_96_tips(ham_int, mixing_corral)
             bleach_mounted_tips(ham_int, destination=mixing_tips)
-            # change_96_tips(ham_int, culture_corral) This is change 2 of 3 from last time
-            # bleach_mounted_tips(ham_int, destination=culture_tips) This is change 3 of 3 from last time
 
         if sys_state.need_to_read_plate:
             plate_id = reader_plate_id(reader_plate)

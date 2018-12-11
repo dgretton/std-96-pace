@@ -78,7 +78,7 @@ if __name__ == '__main__':
     lagoon_fly_disp_height = fixed_lagoon_height + 18 # mm
     wash_vol = max_transfer_vol # uL
 
-    layfile = os.path.join(this_file_dir, 'deck.lay')
+    layfile = os.path.join(this_file_dir, 'assets', 'deck.lay')
     lmgr = LayoutManager(layfile)
 
     lagoon_plate = lmgr.assign_unused_resource(ResourceType(Plate96, 'lagoons'))
@@ -214,7 +214,7 @@ if __name__ == '__main__':
             platedatas = read_plate(ham_int, reader_int, reader_tray, reader_plate_site, protocols,
                     plate_id, plate_destination=plate_trash, async_task=bleach) # throw out plate when done and asynchronously bleach 
             if simulation_on:
-                platedatas = [PlateData(os.path.join('dummy_platedata.csv'))] * 2 # sim dummies
+                platedatas = [PlateData(os.path.join('assets', 'dummy_platedata.csv'))] * 2 # sim dummies
             for platedata, data_type in zip(platedatas, data_types):
                 platedata.wait_for_file()
                 db_add_plate_data(platedata, data_type, reader_plate, lagoons, range(96))

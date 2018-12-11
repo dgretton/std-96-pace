@@ -5,14 +5,9 @@ import types
 from send_email import summon_devteam
 
 this_file_dir = os.path.dirname(__file__)
-pyham_methods_dir = os.path.abspath(os.path.join(this_file_dir, '..'))
-reader_results_dir = os.path.abspath(os.path.join(pyham_methods_dir, '..', '..', 'plate_reader_results'))
+method_local_dir = os.path.join(this_file_dir, 'method_local')
 
-basic_pace_mod_path = os.path.join(pyham_methods_dir, 'basic_pace')
-if basic_pace_mod_path not in sys.path:
-    sys.path.append(basic_pace_mod_path)
-
-from basic_pace_181024 import (
+from pace_util import (
     pyhamilton, LayoutManager, ResourceType, Plate96, Tip96,
     HamiltonInterface, ClarioStar, LBPumps, PlateData, Shaker,
     initialize, hepa_on, tip_pick_up, tip_eject, aspirate, dispense, wash_empty_refill,
@@ -40,7 +35,7 @@ def ensure_meas_table_exists(db_conn):
     db_conn.commit()
 
 def db_add_plate_data(plate_data, data_type, plate, vessel_numbers, read_wells):
-    db_conn = sqlite3.connect(os.path.join(this_file_dir, __file__.split('.')[0] + '.db'))
+    db_conn = sqlite3.connect(os.path.join(method_local_dir, __file__.split('.')[0] + '.db'))
     ensure_meas_table_exists(db_conn)
     c = db_conn.cursor()
     for lagoon_number, read_well in zip(vessel_numbers, read_wells):
@@ -57,7 +52,7 @@ def db_add_plate_data(plate_data, data_type, plate, vessel_numbers, read_wells):
     db_conn.close()
 
 if __name__ == '__main__':
-    local_log_dir = os.path.join(this_file_dir, 'log')
+    local_log_dir = os.path.join(method_local_dir, 'log')
     if not os.path.exists(local_log_dir):
         os.mkdir(local_log_dir)
     main_logfile = os.path.join(local_log_dir, 'main.log')
@@ -219,7 +214,7 @@ if __name__ == '__main__':
             platedatas = read_plate(ham_int, reader_int, reader_tray, reader_plate_site, protocols,
                     plate_id, plate_destination=plate_trash, async_task=bleach) # throw out plate when done and asynchronously bleach 
             if simulation_on:
-                platedatas = [PlateData(os.path.join(reader_results_dir, '17_8_12_abs_180426_1910.csv'))] * 2 # sim dummies
+                platedatas = [PlateData(os.path.join('dummy_platedata.csv'))] * 2 # sim dummies
             for platedata, data_type in zip(platedatas, data_types):
                 platedata.wait_for_file()
                 db_add_plate_data(platedata, data_type, reader_plate, lagoons, range(96))

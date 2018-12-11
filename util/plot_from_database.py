@@ -6,19 +6,24 @@ import sys
 import os
 
 number_of_turb = 96
+db_dir = os.path.join('..', 'method_local')
 
 if len(sys.argv) > 2:
     print('Only (optional) argument is the name of the database you want to plot from')
     exit()
+dbs = [filename for filename in os.listdir(db_dir) if filename.split('.')[-1] == 'db']
 if len(sys.argv) == 2:
     db_name = sys.argv[1]
+    if db_name not in dbs:
+        print('database does not exist in ' + db_dir)
+        exit()
 else:
-    dbs = [filename for filename in os.listdir('.') if filename.split('.')[-1] == 'db']
     if len(dbs) != 1:
-        print('can\'t infer which database you want to plot from, please specify')
+        print('can\'t infer which database you want to plot from, please specify with argument')
+        exit()
     db_name, = dbs
 
-conn = sqlite3.connect(db_name)
+conn = sqlite3.connect(os.path.join(db_dir, db_name))
 c = conn.cursor()
 
 for type in ['lum', 'abs']:
@@ -56,8 +61,6 @@ for type in ['lum', 'abs']:
         locs, labels = plt.xticks()
     
     fig1.tight_layout()
-    plt.savefig('plot_' + type + ".png", dpi = 200)
+    plt.savefig(os.path.join(db_dir, 'plot_' + type + ".png"), dpi = 200)
 
-# We can also close the connection if we are done with it.
-# Just be sure any changes have been committed or they will be lost.
 conn.close()

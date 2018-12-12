@@ -139,19 +139,19 @@ if __name__ == '__main__':
                                        chamber2WashLiquid=0) # 0=Liquid 1 (red container) (bleach)
         small_vol = 10
         logging.info('\n##### Bleaching.')
-        aspirate_96(ham_int, bleach_site, small_vol, mixCycles=2, mixPosition=1, mixVolume=wash_vol, airTransportRetractDist=30)
-        dispense_96(ham_int, bleach_site, small_vol, dispenseMode=9, liquidHeight=10, airTransportRetractDist=30) # mode: blowout
+        aspirate_96(ham_int, bleach_site, small_vol, mixCycles=2, mixPosition=1, mixVolume=wash_vol, airTransportRetractDist=20)
+        dispense_96(ham_int, bleach_site, small_vol, dispenseMode=9, liquidHeight=10, airTransportRetractDist=20) # mode: blowout
         logging.info('\n##### Rinsing.')
-        aspirate_96(ham_int, rinse_site, wash_vol, mixCycles=rinse_mix_cycles, mixPosition=1, mixVolume=wash_vol, airTransportRetractDist=30)
-        dispense_96(ham_int, rinse_site, wash_vol, dispenseMode=9, liquidHeight=10, airTransportRetractDist=30) # mode: blowout
+        aspirate_96(ham_int, rinse_site, wash_vol, mixCycles=rinse_mix_cycles, mixPosition=1, mixVolume=wash_vol, airTransportRetractDist=20)
+        dispense_96(ham_int, rinse_site, wash_vol, dispenseMode=9, liquidHeight=10, airTransportRetractDist=20) # mode: blowout
         if not sys_state.disable_pumps:
             for i in range(rinse_replacements - 1):
                 logging.info('\n##### Refilling water.')
                 wash_empty_refill(ham_int, refillAfterEmpty=2, # 2=Refill chamber 1 only
                                            chamber1WashLiquid=1) # 1=liquid 2 (blue container) (water)
                 logging.info('\n##### Rinsing.')
-                aspirate_96(ham_int, rinse_site, wash_vol, mixCycles=rinse_mix_cycles, mixPosition=1, mixVolume=wash_vol, airTransportRetractDist=30)
-                dispense_96(ham_int, rinse_site, wash_vol, dispenseMode=9, liquidHeight=10, airTransportRetractDist=30) # mode: blowout
+                aspirate_96(ham_int, rinse_site, wash_vol, mixCycles=rinse_mix_cycles, mixPosition=1, mixVolume=wash_vol, airTransportRetractDist=20)
+                dispense_96(ham_int, rinse_site, wash_vol, dispenseMode=9, liquidHeight=10, airTransportRetractDist=20) # mode: blowout
         if destination:
             put_96_tips(ham_int, destination)
         logging.info('\n##### Done bleaching tips.')
@@ -178,9 +178,9 @@ if __name__ == '__main__':
 
         logging.info('\n##### Moving fresh culture into lagoons.')
         change_96_tips(ham_int, culture_tips)
-        aspirate_96(ham_int, culture_reservoir, cycle_replace_vol, mixCycles=6, mixVolume=100, liquidHeight=.5, airTransportRetractDist=30)
+        aspirate_96(ham_int, culture_reservoir, cycle_replace_vol, mixCycles=6, mixVolume=100, liquidHeight=.5, airTransportRetractDist=20)
         waffle_clean_thread = run_async(lambda: (shaker.start(300), pump_int.empty(culture_supply_vol), pump_int.bleach_clean(), shaker.stop()))
-        dispense_96(ham_int, lagoon_plate, cycle_replace_vol, liquidHeight=lagoon_fly_disp_height, dispenseMode=9, airTransportRetractDist=30) # mode: blowout
+        dispense_96(ham_int, lagoon_plate, cycle_replace_vol, liquidHeight=lagoon_fly_disp_height, dispenseMode=9, airTransportRetractDist=20) # mode: blowout
         put_96_tips(ham_int, culture_tips, immediately=True)
 
         logging.info('\n##### Mixing lagoons.')
@@ -190,18 +190,18 @@ if __name__ == '__main__':
             move_plate(ham_int, reader_plate, reader_plate_site)
             change_96_tips(ham_int, mixing_tips)
             aspirate_96(ham_int, lagoon_plate, read_sample_vol, mixCycles=2, mixPosition=2,
-                    mixVolume=400, liquidFollowing=1, liquidHeight=fixed_lagoon_height, airTransportRetractDist=30)
-            dispense_96(ham_int, reader_plate_site, read_sample_vol, liquidHeight=5, dispenseMode=9, airTransportRetractDist=30) # mode: blowout
+                    mixVolume=400, liquidFollowing=1, liquidHeight=fixed_lagoon_height, airTransportRetractDist=20)
+            dispense_96(ham_int, reader_plate_site, read_sample_vol, liquidHeight=5, dispenseMode=9, airTransportRetractDist=20) # mode: blowout
         else:
             change_96_tips(ham_int, mixing_tips)
             aspirate_96(ham_int, lagoon_plate, read_sample_vol, mixCycles=2, mixPosition=2,
-                    mixVolume=400, liquidFollowing=1, liquidHeight=fixed_lagoon_height, airTransportRetractDist=30)
-            dispense_96(ham_int, lagoon_plate, read_sample_vol, liquidHeight=fixed_lagoon_height+3, dispenseMode=9, airTransportRetractDist=30) # mode: blowout
+                    mixVolume=400, liquidFollowing=1, liquidHeight=fixed_lagoon_height, airTransportRetractDist=20)
+            dispense_96(ham_int, lagoon_plate, read_sample_vol, liquidHeight=fixed_lagoon_height+3, dispenseMode=9, airTransportRetractDist=20) # mode: blowout
 
         logging.info('\n##### Draining lagoons to constant height.')
         excess_vol = max_transfer_vol * .8
-        aspirate_96(ham_int, lagoon_plate, excess_vol, liquidHeight=fixed_lagoon_height, airTransportRetractDist=30)
-        dispense_96(ham_int, bleach_site, excess_vol, liquidHeight=10, dispenseMode=9, airTransportRetractDist=30) # mode: blowout
+        aspirate_96(ham_int, lagoon_plate, excess_vol, liquidHeight=fixed_lagoon_height, airTransportRetractDist=20)
+        dispense_96(ham_int, bleach_site, excess_vol, liquidHeight=10, dispenseMode=9, airTransportRetractDist=20) # mode: blowout
         put_96_tips(ham_int, mixing_corral, immediately=True) # This causes the robot to dumbly put the tips down and then immediately pick them up again but you know what I'm not messing with it
 
         def bleach():

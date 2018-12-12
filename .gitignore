@@ -47,8 +47,12 @@ ENV/
 env.bak/
 venv.bak/
 
+# vim swap files
+*.swp
+
 # Data local to particular robot methods
 method_local/*
 
 # Hamilton temporary files
 *.res
+

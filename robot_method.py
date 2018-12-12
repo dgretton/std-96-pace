@@ -4,8 +4,9 @@ import sys, os, time, logging, sqlite3
 import types
 from send_email import summon_devteam
 
-this_file_dir = os.path.dirname(__file__)
+this_file_dir = os.path.dirname(os.path.abspath(__file__))
 method_local_dir = os.path.join(this_file_dir, 'method_local')
+containing_dirname = os.path.basename(os.path.dirname(this_file_dir))
 
 from pace_util import (
     pyhamilton, LayoutManager, ResourceType, Plate96, Tip96,
@@ -35,7 +36,7 @@ def ensure_meas_table_exists(db_conn):
     db_conn.commit()
 
 def db_add_plate_data(plate_data, data_type, plate, vessel_numbers, read_wells):
-    db_conn = sqlite3.connect(os.path.join(method_local_dir, __file__.split('.')[0] + '.db'))
+    db_conn = sqlite3.connect(os.path.join(method_local_dir, containing_dirname + '.db'))
     ensure_meas_table_exists(db_conn)
     c = db_conn.cursor()
     for lagoon_number, read_well in zip(vessel_numbers, read_wells):
@@ -206,6 +207,7 @@ if __name__ == '__main__':
         def bleach():
             change_96_tips(ham_int, mixing_corral)
             bleach_mounted_tips(ham_int, destination=mixing_tips)
+            change_96_tips(ham_int, None)
 
         if sys_state.need_to_read_plate:
             plate_id = reader_plate_id(reader_plate)
@@ -254,11 +256,15 @@ if __name__ == '__main__':
         ham_int.set_log_dir(os.path.join(local_log_dir, 'hamilton.log'))
         init_cmd = initialize(ham_int, async=True)
         align_shaker = run_async(lambda: (shaker.start(70), shaker.stop()))
-        logging.info('\n##### Priming pump lines.')
-        pump_int.prime()
-        align_shaker.join()
+        align_shaker.join() # TODO: Something in parallelism was messing up (almost positive it was the shaker start/stop force quitting the putty processes for the pumps), synchronous for now
+        logging.info('\n##### Priming pump lines and cleaning reservoir.')
+        prime_and_clean = run_async(lambda: (pump_int.prime(), shaker.start(300), pump_int.bleach_clean(), shaker.stop())) # TODO: refactor into clean method that always includes shaker
+        prime_and_clean.join() # TODO: Something in parallelism was messing up, synchronous for now
         ham_int.wait_on_response(init_cmd, raise_first_exception=True)
         hepa_on(ham_int, simulate=int(simulation_on))
+        logging.info('\n##### Filling bleach so first waste dispense does not froth up.')
+        if not sys_state.disable_pumps:
+            wash_empty_refill(ham_int, refillAfterEmpty=3, chamber2WashLiquid=0) # 3=chamber 2 only; 0=Liquid 1 (bleach)
 
         try:
             errmsg_str = ''
@@ -290,7 +296,7 @@ if __name__ == '__main__':
             shaker.stop()
             if not simulation_on and time.time() - start_time > 3600*2:
                 summon_devteam('I\'m concerned that your robot might\'ve stopped. ' + __file__ + ' halted.',
-                "Dear Erika,\n\nThe method above has stopped executing. This could be a good thing "
+                "Dear DevTeam,\n\nThe method above has stopped executing. This could be a good thing "
                 "or a bad thing. Either PACE is done, we're out of reader plates or tips or something, "
                 "or SOMEONE MESSED UP.\n\n" +
                 ('The following exception message might help you: ' + errmsg_str + '\n\n' if errmsg_str else '') +

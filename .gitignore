@@ -49,3 +49,6 @@ venv.bak/
 
 # Data local to particular robot methods
 method_local/*
+
+# Hamilton temporary files
+*.res

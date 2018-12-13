@@ -159,6 +159,11 @@ if __name__ == '__main__':
     def reader_plate_id(reader_plate):
         return __file__ + ' plate ' + str(reader_plates.index(reader_plate))
 
+    def clean_reservoir(pump_int, shaker):
+        shaker.start(300)
+        pump_int.bleach_clean()
+        shaker.stop()
+
     def service_lagoons(ham_int, pump_int, reader_int):
         logging.info('\n\n##### ------------------ Servicing lagoons ------------------')
 
@@ -179,7 +184,7 @@ if __name__ == '__main__':
         logging.info('\n##### Moving fresh culture into lagoons.')
         change_96_tips(ham_int, culture_tips)
         aspirate_96(ham_int, culture_reservoir, cycle_replace_vol, mixCycles=6, mixVolume=100, liquidHeight=.5, airTransportRetractDist=30)
-        waffle_clean_thread = run_async(lambda: (shaker.start(300), pump_int.empty(culture_supply_vol), pump_int.bleach_clean(), shaker.stop()))
+        waffle_clean_thread = run_async(lambda: (pump_int.empty(culture_supply_vol), clean_reservoir(pump_int, shaker)))
         dispense_96(ham_int, lagoon_plate, cycle_replace_vol, liquidHeight=lagoon_fly_disp_height, dispenseMode=9, airTransportRetractDist=30) # mode: blowout
         put_96_tips(ham_int, culture_tips, immediately=True)
 
@@ -258,7 +263,7 @@ if __name__ == '__main__':
         align_shaker = run_async(lambda: (shaker.start(70), shaker.stop()))
         align_shaker.join() # TODO: Something in parallelism was messing up (almost positive it was the shaker start/stop force quitting the putty processes for the pumps), synchronous for now
         logging.info('\n##### Priming pump lines and cleaning reservoir.')
-        prime_and_clean = run_async(lambda: (pump_int.prime(), shaker.start(300), pump_int.bleach_clean(), shaker.stop())) # TODO: refactor into clean method that always includes shaker
+        prime_and_clean = run_async(lambda: (pump_int.prime(), clean_reservoir(pump_int, shaker)))
         prime_and_clean.join() # TODO: Something in parallelism was messing up, synchronous for now
         ham_int.wait_on_response(init_cmd, raise_first_exception=True)
         hepa_on(ham_int, simulate=int(simulation_on))

@@ -62,12 +62,16 @@ def initialize(ham, async=False):
     return cmd
 
 def hepa_on(ham, speed=15, async=False, **more_options):
+    logging.info('hepa_on: turn on HEPA filter at ' + str(speed) + '% capacity' +
+            ('' if not more_options else ' with extra options ' + str(more_options)))
     cmd = ham.send_command(HEPA, fanSpeed=speed, **more_options)
     if not async:
         ham.wait_on_response(cmd, raise_first_exception=True)
     return cmd
 
 def wash_empty_refill(ham, async=False, **more_options):
+    logging.info('wash_empty_refill: empty the washer' +
+            ('' if not more_options else ' with extra options ' + str(more_options)))
     cmd = ham.send_command(WASH96_EMPTY, **more_options)
     if not async:
         ham.wait_on_response(cmd, raise_first_exception=True)

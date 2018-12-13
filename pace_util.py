@@ -56,6 +56,7 @@ def compound_pos_str_96(labware96):
     return ';'.join((labware_pos_str(labware96, idx) for idx in range(96)))
 
 def initialize(ham, async=False):
+    logging.info('initialize: ' + ('a' if async else '') + 'synchronously initialize the robot')
     cmd = ham.send_command(INITIALIZE)
     if not async:
         ham.wait_on_response(cmd, raise_first_exception=True)

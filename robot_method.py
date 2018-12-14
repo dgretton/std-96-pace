@@ -181,7 +181,7 @@ if __name__ == '__main__':
         aspirate_96(ham_int, culture_reservoir, cycle_replace_vol, mixCycles=6, mixVolume=100, liquidHeight=.5, airTransportRetractDist=30)
         waffle_clean_thread = run_async(lambda: (shaker.start(300), pump_int.empty(culture_supply_vol), pump_int.bleach_clean(), shaker.stop()))
         dispense_96(ham_int, lagoon_plate, cycle_replace_vol, liquidHeight=lagoon_fly_disp_height, dispenseMode=9, airTransportRetractDist=30) # mode: blowout
-        put_96_tips(ham_int, culture_tips, immediately=True)
+        put_96_tips(ham_int, culture_corral, immediately=True)
 
         logging.info('\n##### Mixing lagoons.')
         if sys_state.need_to_read_plate:
@@ -207,6 +207,8 @@ if __name__ == '__main__':
         def bleach():
             change_96_tips(ham_int, mixing_corral)
             bleach_mounted_tips(ham_int, destination=mixing_tips)
+            change_96_tips(ham_int, culture_corral)
+            bleach_mounted_tips(ham_int, destination=culture_tips)
             change_96_tips(ham_int, None)
 
         if sys_state.need_to_read_plate:

@@ -92,7 +92,6 @@ if __name__ == '__main__':
     culture_tips = lmgr.assign_unused_resource(ResourceType(Tip96, 'culture_tips'))
     inducer_tips = lmgr.assign_unused_resource(ResourceType(Tip96, 'inducer_tips'))
     mixing_corral = lmgr.assign_unused_resource(ResourceType(Tip96, 'lagoon_dirty_tips'))
-    culture_corral = lmgr.assign_unused_resource(ResourceType(Tip96, 'culture_dirty_tips'))
     reader_tray = lmgr.assign_unused_resource(ResourceType(Plate96, 'reader_tray'))
     bleach_site = lmgr.assign_unused_resource(ResourceType(Tip96, 'RT300_HW_96WashDualChamber1_bleach'))
     rinse_site = lmgr.assign_unused_resource(ResourceType(Tip96, 'RT300_HW_96WashDualChamber1_water'))

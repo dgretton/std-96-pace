@@ -258,17 +258,15 @@ if __name__ == '__main__':
             reader_int.disable()
             shaker.disable()
         ham_int.set_log_dir(os.path.join(local_log_dir, 'hamilton.log'))
-        init_cmd = initialize(ham_int, async=True)
-        align_shaker = run_async(lambda: (shaker.start(70), shaker.stop()))
-        align_shaker.join() # TODO: Something in parallelism was messing up (almost positive it was the shaker start/stop force quitting the putty processes for the pumps), synchronous for now
         logging.info('\n##### Priming pump lines and cleaning reservoir.')
-        prime_and_clean = run_async(lambda: (pump_int.prime(), clean_reservoir(pump_int, shaker)))
-        prime_and_clean.join() # TODO: Something in parallelism was messing up, synchronous for now
-        ham_int.wait_on_response(init_cmd, raise_first_exception=True)
+        prime_and_clean = run_async(lambda: (pump_int.prime(),              # important that the shaker is
+                shaker.start(300), pump_int.bleach_clean(), shaker.stop())) # started and stopped at least once
+        initialize(ham_int)
         hepa_on(ham_int, simulate=int(simulation_on))
         logging.info('\n##### Filling bleach so first waste dispense does not froth up.')
         if not sys_state.disable_pumps:
             wash_empty_refill(ham_int, refillAfterEmpty=3, chamber2WashLiquid=0) # 3=chamber 2 only; 0=Liquid 1 (bleach)
+        prime_and_clean.join()
 
         try:
             errmsg_str = ''

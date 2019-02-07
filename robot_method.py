@@ -133,7 +133,7 @@ if __name__ == '__main__':
         logging.info('\n##### Bleaching currently mounted tips' + (' and depositing at ' + destination.layout_name() if destination else '') + '.')
         if not sys_state.disable_pumps:
             logging.info('\n##### Refilling water and bleach.')
-            wash_empty_refill(ham_int, refillAfterEmpty=1,
+            wash_empty_refill(ham_int, refillAfterEmpty=1, # 1=Refill both chambers
                                        chamber1WashLiquid=1, # 1=liquid 2 (blue container) (water)
                                        chamber2WashLiquid=0) # 0=Liquid 1 (red container) (bleach)
         small_vol = 10

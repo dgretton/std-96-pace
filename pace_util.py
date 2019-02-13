@@ -267,7 +267,10 @@ def add_stderr_logging(logger_name=None):
     logger = logging.getLogger(logger_name) # root logger if None
     sys.stderr = StderrLogger(logger.error)
 
-fileflag_dir = os.path.join('method_local', 'flags')
+fileflag_dir = os.path.abspath('.')
+while fileflag_dir and os.path.basename(fileflag_dir).lower() != 'std-96-pace':
+    fileflag_dir = os.path.dirname(fileflag_dir)
+fileflag_dir = os.path.join(fileflag_dir, 'method_local', 'flags')
 
 def set_fileflag(flag_name):
     assert_fileflag_harmless(flag_name)

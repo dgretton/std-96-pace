@@ -50,6 +50,9 @@ venv.bak/
 # vim swap files
 *.swp
 
+# Mac OS temp files
+*.DS_Store
+
 # Data local to particular robot methods
 method_local/*
 

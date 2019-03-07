@@ -14,6 +14,8 @@ reader_mod_path = os.path.join(methods_dir, 'perma_plate_reader', 'platereader')
 pump_pkg_path = os.path.join(methods_dir, 'perma_pump', 'auxpump')
 shaker_pkg_path = os.path.join(methods_dir, 'perma_shaker', 'auxshaker')
 
+LAYFILE = os.path.join(this_file_dir, 'assets', 'deck.lay')
+
 for imp_path in (pyham_pkg_path, reader_mod_path, pump_pkg_path, shaker_pkg_path):
     pkgname = os.path.basename(imp_path)
     try:

@@ -9,7 +9,7 @@ method_local_dir = os.path.join(this_file_dir, 'method_local')
 containing_dirname = os.path.basename(os.path.dirname(this_file_dir))
 
 from pace_util import (
-    pyhamilton, LayoutManager, ResourceType, Plate96, Tip96,
+    pyhamilton, LayoutManager, ResourceType, Plate96, Tip96, LAYFILE,
     HamiltonInterface, ClarioStar, LBPumps, PlateData, Shaker,
     initialize, hepa_on, tip_pick_up, tip_eject, aspirate, dispense, wash_empty_refill,
     tip_pick_up_96, tip_eject_96, aspirate_96, dispense_96,
@@ -79,8 +79,7 @@ if __name__ == '__main__':
     lagoon_fly_disp_height = fixed_lagoon_height + 18 # mm
     wash_vol = max_transfer_vol # uL
 
-    layfile = os.path.join(this_file_dir, 'assets', 'deck.lay')
-    lmgr = LayoutManager(layfile)
+    lmgr = LayoutManager(LAYFILE)
 
     lagoon_plate = lmgr.assign_unused_resource(ResourceType(Plate96, 'lagoons'))
     mixing_tips = lmgr.assign_unused_resource(ResourceType(Tip96, 'lagoon_tips'))

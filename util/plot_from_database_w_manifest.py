@@ -31,7 +31,8 @@ def plot_well(well, type, plt, color = 'b', linewidth = 1, linestyle = '.-'):
     locs, labels = plt.xticks()
 
 # automatically find the database file for this 96-robot method
-db_dir = os.path.join('..', 'method_local')
+method_local_dir = os.path.join('..', 'method_local')
+db_dir = method_local_dir
 
 if len(sys.argv) > 2:
     print('Only (optional) argument is the name of the database you want to plot from')
@@ -56,7 +57,7 @@ c = conn.cursor()
 colors = ['b', 'g', 'r', 'c', 'm', 'y', 'k', 'b', 'mediumseagreen', 'lightcoral', 'darkkhaki']
 
 # read in manifest file
-csvfile = open('Manifest.csv', 'r')
+csvfile = open(os.path.join(method_local_dir, 'Manifest.csv', 'r'))
 reader = csv.reader(csvfile)
 manifest = {}
 well_phage = {}

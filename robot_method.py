@@ -194,8 +194,8 @@ if __name__ == '__main__':
         if sys_state.need_to_read_plate:
             logging.info('\n##### Sampling liquid from lagoons to reader plates.')
             while True:
+                reader_plate = next(reader_plate_gen)
                 try:
-                    reader_plate = next(reader_plate_gen)
                     move_plate(ham_int, reader_plate, reader_plate_site)
                     break
                 except pyhamilton.LabwareError:

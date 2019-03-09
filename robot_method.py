@@ -78,6 +78,7 @@ if __name__ == '__main__':
     fixed_lagoon_height = 19 # mm for 500uL lagoons
     lagoon_fly_disp_height = fixed_lagoon_height + 18 # mm
     wash_vol = max_transfer_vol # uL
+    DEFAULT_WASTE = 'default_waste'
 
     lmgr = LayoutManager(LAYFILE)
 
@@ -116,7 +117,10 @@ if __name__ == '__main__':
         if sys_state.mounted_tips is new_tips or sys_state.mounted_tips == new_tips:
             return
         if sys_state.mounted_tips is not None:
-            tip_eject_96(ham_int, sys_state.mounted_tips)
+            if sys_state.mounted_tips is DEFAULT_WASTE:
+                tip_eject_96(ham_int)
+            else:
+                tip_eject_96(ham_int, sys_state.mounted_tips)
         sys_state.mounted_tips = new_tips
         if new_tips is not None:
             tip_pick_up_96(ham_int, new_tips)
@@ -189,8 +193,13 @@ if __name__ == '__main__':
         logging.info('\n##### Mixing lagoons.')
         if sys_state.need_to_read_plate:
             logging.info('\n##### Sampling liquid from lagoons to reader plates.')
-            reader_plate = next(reader_plate_gen)
-            move_plate(ham_int, reader_plate, reader_plate_site)
+            while True:
+                try:
+                    reader_plate = next(reader_plate_gen)
+                    move_plate(ham_int, reader_plate, reader_plate_site)
+                    break
+                except pyhamilton.LabwareError:
+                    pass
             change_96_tips(ham_int, mixing_tips)
             aspirate_96(ham_int, lagoon_plate, read_sample_vol, mixCycles=2, mixPosition=2,
                     mixVolume=400, liquidFollowing=1, liquidHeight=fixed_lagoon_height, airTransportRetractDist=30)
@@ -237,6 +246,10 @@ if __name__ == '__main__':
     sys_state.disable_pumps = '--no_pumps' in sys.argv
     debug = '--debug' in sys.argv
     simulation_on = debug or '--simulate' in sys.argv
+    mid_run = '--continue' in sys.argv
+    if mid_run:
+        print('CONTINUING A PREVIOUSLY INITIALIZED AND PAUSED RUN. WILL SKIP CLEANING. OK? 5 SECONDS TO CANCEL...')
+        time.sleep(5)
 
     def times_at_intervals(interval, delay=0):
         target_time = time.time() + delay
@@ -258,15 +271,20 @@ if __name__ == '__main__':
             shaker.disable()
         ham_int.set_log_dir(os.path.join(local_log_dir, 'hamilton.log'))
         logging.info('\n##### Priming pump lines and cleaning reservoir.')
-        prime_and_clean = run_async(lambda: (pump_int.prime(),              # important that the shaker is
-                shaker.start(300), pump_int.bleach_clean(), shaker.stop())) # started and stopped at least once
+        if mid_run:
+            prime_and_clean = None
+        else:
+            prime_and_clean = run_async(lambda: (pump_int.prime(),              # important that the shaker is
+                    shaker.start(300), pump_int.bleach_clean(), shaker.stop())) # started and stopped at least once
+        shaker.stop() #TODO: remove
         initialize(ham_int)
         hepa_on(ham_int, simulate=int(simulation_on))
         logging.info('\n##### Filling bleach so first waste dispense does not froth up.')
         if not sys_state.disable_pumps:
             wash_empty_refill(ham_int, refillAfterEmpty=3, chamber2WashLiquid=0) # 3=chamber 2 only; 0=Liquid 1 (bleach)
-        prime_and_clean.join()
-
+        if prime_and_clean:
+            prime_and_clean.join()
+        #TODO: put schedule declaration back here
         try:
             errmsg_str = ''
             start_time = time.time()
@@ -291,7 +309,9 @@ if __name__ == '__main__':
                     continue
                 break
         except Exception as e:
-            errmsg_str = e.__class__.__name__
+            errmsg_str = e.__class__.__name__ + ': ' + str(e).replace('\n', ' ')
+            logging.exception(errmsg_str)
+            print(errmsg_str)
         finally:
             clear_fileflag('debug')
             shaker.stop()

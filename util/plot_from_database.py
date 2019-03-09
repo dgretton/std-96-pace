@@ -48,7 +48,7 @@ for type in ['lum', 'abs']:
             #pdb.set_trace()
             vals = [(t, w, v) for t, w, v in vals if t > datetime(2018, 11, 1, 18, 15)] 
     
-            assert w == well, "Recorded lagoon ", w, " not equal to expected lagoon well", well
+            assert w == well, "Recorded lagoon " + str(w) + " not equal to expected lagoon well " + str(well)
 
             plt.plot([j for (j, _, _) in vals], [lum for (j, _, lum) in vals], 'b.-')
     

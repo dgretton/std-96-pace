@@ -63,9 +63,11 @@ if __name__ == '__main__':
     for banner_line in log_banner('Begin execution of ' + __file__):
         logging.info(banner_line)
 
-    num_lagoons = 96
-    lagoons = range(num_lagoons)
     num_reader_plates = 5 * 4 # 5 stacks of 4
+    num_disp_lagoons = 4
+    assert num_disp_lagoons <= 8
+    num_lagoons = 8*11 + num_disp_lagoons
+    lagoons = range(num_lagoons)
     culture_supply_vol = 50 # mL
     # inducer_vol = 200 # uL
     max_transfer_vol = 985 # uL
@@ -90,9 +92,10 @@ if __name__ == '__main__':
     reader_plates = resource_list_with_prefix(lmgr, 'reader_plate_', Plate96, num_reader_plates, reverse=True)
     culture_reservoir = lmgr.assign_unused_resource(ResourceType(Plate96, 'waffle'))
     culture_tips = lmgr.assign_unused_resource(ResourceType(Tip96, 'culture_tips'))
-    inducer_tips = lmgr.assign_unused_resource(ResourceType(Tip96, 'inducer_tips'))
+    disp_tips = lmgr.assign_unused_resource(ResourceType(Tip96, 'disposable_tips'))
     mixing_corral = lmgr.assign_unused_resource(ResourceType(Tip96, 'lagoon_dirty_tips'))
     reader_tray = lmgr.assign_unused_resource(ResourceType(Plate96, 'reader_tray'))
+    temp_layout = lmgr.assign_unused_resource(ResourceType(Tip96, 'temp_tip_layout'))
     bleach_site = lmgr.assign_unused_resource(ResourceType(Tip96, 'RT300_HW_96WashDualChamber1_bleach'))
     rinse_site = lmgr.assign_unused_resource(ResourceType(Tip96, 'RT300_HW_96WashDualChamber1_water'))
     
@@ -102,7 +105,7 @@ if __name__ == '__main__':
     sys_state.mounted_tips = None
 
     reader_plate_gen = iter(reader_plates)
-    inducer_tip_pos_gen = iter(zip([inducer_tips] * 96, range(96)))
+    disp_tip_poss = [(temp_layout, i) for i in range(8*11, 8*11+num_disp_lagoons)]
 
     def next_reader_plate_poss(num_poss=len(lagoons)):
         poss = [None]*num_poss
@@ -112,6 +115,12 @@ if __name__ == '__main__':
             except StopIteration:
                 pass
         return poss
+
+    def disp_tips_gen():
+        while True:
+            for i in range(0, 96, num_disp_lagoons):
+                yield [(disp_tips, i+j) for j in range(num_disp_lagoons)]
+    disp_tips_gen = disp_tips_gen()
 
     def change_96_tips(ham_int, new_tips): # None is an acceptable argument
         if sys_state.mounted_tips is new_tips or sys_state.mounted_tips == new_tips:
@@ -178,6 +187,13 @@ if __name__ == '__main__':
         #    except pyhamilton.NoTipError:
         #        continue
         #liq_class_300uL = 'StandardVolumeFilter_Water_DispenseJet_Empty_with_transport_vol'
+        while True:
+            try:
+                tip_pick_up(ham_int, next(disp_tips_gen))
+                break
+            except pyhamilton.NoTipError:
+                continue
+        tip_eject(ham_int, disp_tip_poss)
         culture_fill_thread.join()
         #aspirate(ham_int, [(inducer_site, 0)], [inducer_vol], liquidClass=liq_class_300uL)
         #dispense(ham_int, [(culture_reservoir, 93)], [inducer_vol], liquidClass=liq_class_300uL)
@@ -214,7 +230,24 @@ if __name__ == '__main__':
         excess_vol = max_transfer_vol * .8
         aspirate_96(ham_int, lagoon_plate, excess_vol, liquidHeight=fixed_lagoon_height, airTransportRetractDist=30)
         dispense_96(ham_int, bleach_site, excess_vol, liquidHeight=10, dispenseMode=9, airTransportRetractDist=30) # mode: blowout
-        put_96_tips(ham_int, mixing_corral, immediately=True) # This causes the robot to dumbly put the tips down and then immediately pick them up again but you know what I'm not messing with it
+
+        put_96_tips(ham_int, mixing_corral)
+        change_96_tips(ham_int, temp_layout)
+
+        if sys_state.need_to_read_plate:
+            aspirate_96(ham_int, lagoon_plate, read_sample_vol, mixCycles=2, mixPosition=2,
+                    mixVolume=400, liquidFollowing=1, liquidHeight=fixed_lagoon_height, airTransportRetractDist=30)
+            dispense_96(ham_int, reader_plate_site, read_sample_vol, liquidHeight=5, dispenseMode=9, airTransportRetractDist=30) # mode: blowout
+        else:
+            aspirate_96(ham_int, lagoon_plate, read_sample_vol, mixCycles=2, mixPosition=2,
+                    mixVolume=400, liquidFollowing=1, liquidHeight=fixed_lagoon_height, airTransportRetractDist=30)
+            dispense_96(ham_int, lagoon_plate, read_sample_vol, liquidHeight=fixed_lagoon_height+3, dispenseMode=9, airTransportRetractDist=30) # mode: blowout
+
+        logging.info('\n##### Draining lagoons to constant height.')
+        aspirate_96(ham_int, lagoon_plate, excess_vol, liquidHeight=fixed_lagoon_height, airTransportRetractDist=30)
+        dispense_96(ham_int, bleach_site, excess_vol, liquidHeight=10, dispenseMode=9, airTransportRetractDist=30) # mode: blowout
+        
+        put_96_tips(ham_int, DEFAULT_WASTE, immediately=True)
 
         def bleach():
             change_96_tips(ham_int, mixing_corral)
@@ -231,7 +264,7 @@ if __name__ == '__main__':
                 platedatas = [PlateData(os.path.join('assets', 'dummy_platedata.csv'))] * 2 # sim dummies
             for platedata, data_type in zip(platedatas, data_types):
                 platedata.wait_for_file()
-                db_add_plate_data(platedata, data_type, reader_plate, lagoons, range(96))
+                db_add_plate_data(platedata, data_type, reader_plate, lagoons, [*range(8*10), *range(8*11, 8*11+num_disp_lagoons)])
             reader_int.plate_in(block=False)
             sys_state.need_to_read_plate = False
         else:

@@ -216,10 +216,14 @@ def tip_pick_up_96(ham_int, tip96, **more_options):
         labwarePositions=labware_poss,
         **more_options), raise_first_exception=True)
 
-def tip_eject_96(ham_int, tip96, **more_options):
-    logging.info('tip_eject_96: Eject tips to ' + tip96.layout_name() +
+def tip_eject_96(ham_int, tip96=None, **more_options):
+    logging.info('tip_eject_96: Eject tips to ' + (tip96.layout_name() if tip96 else 'default waste') +
             ('' if not more_options else ' with extra options ' + str(more_options)))
-    labware_poss = compound_pos_str_96(tip96)
+    if tip96 is None:
+        labware_poss = ''
+        more_options.update({'tipEjectToKnownPosition':2}) # 2 is default waste
+    else:   
+        labware_poss = compound_pos_str_96(tip96)
     ham_int.wait_on_response(ham_int.send_command(EJECT96,
         labwarePositions=labware_poss,
         **more_options), raise_first_exception=True)

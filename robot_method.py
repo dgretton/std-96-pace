@@ -64,6 +64,7 @@ if __name__ == '__main__':
         logging.info(banner_line)
 
     num_reader_plates = 5 * 4 # 5 stacks of 4
+    num_disp_tip_racks = 6
     num_disp_lagoons = 4
     assert num_disp_lagoons <= 8
     num_lagoons = 8*11 + num_disp_lagoons
@@ -92,7 +93,7 @@ if __name__ == '__main__':
     reader_plates = resource_list_with_prefix(lmgr, 'reader_plate_', Plate96, num_reader_plates, reverse=True)
     culture_reservoir = lmgr.assign_unused_resource(ResourceType(Plate96, 'waffle'))
     culture_tips = lmgr.assign_unused_resource(ResourceType(Tip96, 'culture_tips'))
-    disp_tips = lmgr.assign_unused_resource(ResourceType(Tip96, 'disposable_tips'))
+    disp_tips = resource_list_with_prefix(lmgr, 'disposable_tips_', Tip96, num_disp_tip_racks)
     mixing_corral = lmgr.assign_unused_resource(ResourceType(Tip96, 'lagoon_dirty_tips'))
     reader_tray = lmgr.assign_unused_resource(ResourceType(Plate96, 'reader_tray'))
     temp_layout = lmgr.assign_unused_resource(ResourceType(Tip96, 'temp_tip_layout'))
@@ -118,8 +119,9 @@ if __name__ == '__main__':
 
     def disp_tips_gen():
         while True:
-            for i in range(0, 96, num_disp_lagoons):
-                yield [(disp_tips, i+j) for j in range(num_disp_lagoons)]
+            for disp_tip_rack in disp_tips:
+                for i in range(0, 96, num_disp_lagoons):
+                    yield [(disp_tip_rack, i+j) for j in range(num_disp_lagoons)]
     disp_tips_gen = disp_tips_gen()
 
     def change_96_tips(ham_int, new_tips): # None is an acceptable argument
@@ -309,7 +311,6 @@ if __name__ == '__main__':
         else:
             prime_and_clean = run_async(lambda: (pump_int.prime(),              # important that the shaker is
                     shaker.start(300), pump_int.bleach_clean(), shaker.stop())) # started and stopped at least once
-        shaker.stop() #TODO: remove
         initialize(ham_int)
         hepa_on(ham_int, simulate=int(simulation_on))
         logging.info('\n##### Filling bleach so first waste dispense does not froth up.')
@@ -317,7 +318,6 @@ if __name__ == '__main__':
             wash_empty_refill(ham_int, refillAfterEmpty=3, chamber2WashLiquid=0) # 3=chamber 2 only; 0=Liquid 1 (bleach)
         if prime_and_clean:
             prime_and_clean.join()
-        #TODO: put schedule declaration back here
         try:
             errmsg_str = ''
             start_time = time.time()
@@ -331,7 +331,8 @@ if __name__ == '__main__':
                     if fileflag('stop'):
                         clear_fileflag('stop'); exit()
                     next_time = next_times[task_num]
-                    if time.time() - next_time >= 0:
+                    if time.time() - next_time >= 0 or fileflag('continue'):
+                        clear_fileflag('continue')
                         scheduled_func(ham_int, pump_int, reader_int)
                         try:
                             next_times[task_num] = next(interval_gen)

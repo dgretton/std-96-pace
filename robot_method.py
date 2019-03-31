@@ -105,7 +105,12 @@ if __name__ == '__main__':
     sys_state.need_to_read_plate = False
     sys_state.mounted_tips = None
 
-    reader_plate_gen = iter(reader_plates)
+    def reader_plate_gen():
+        while True:
+            for plate in reader_plates:
+                yield plate
+    reader_plate_gen = reader_plate_gen()
+
     disp_tip_poss = [(temp_layout, i) for i in range(8*11, 8*11+num_disp_lagoons)]
 
     def next_reader_plate_poss(num_poss=len(lagoons)):

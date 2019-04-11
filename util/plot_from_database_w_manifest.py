@@ -29,6 +29,7 @@ def plot_well(well, type, plt, color = 'b', linewidth = 1, linestyle = '.-'):
     labels_sparse = [labels[x] if x % 6 == 0 else '' for x in range(len(labels))]
     plt.xticks(times, labels_sparse)
     locs, labels = plt.xticks()
+    plt.plot([1, 10], [1, 10])
 
 # automatically find the database file for this 96-robot method
 method_local_dir = os.path.join('..', 'method_local')
@@ -57,7 +58,7 @@ c = conn.cursor()
 colors = ['b', 'g', 'r', 'c', 'm', 'y', 'k', 'b', 'mediumseagreen', 'lightcoral', 'darkkhaki']
 
 # read in manifest file
-csvfile = open(os.path.join(method_local_dir, 'Manifest.csv', 'r'))
+csvfile = open(os.path.join(method_local_dir, 'Manifest.csv'), 'r')
 reader = csv.reader(csvfile)
 manifest = {}
 well_phage = {}

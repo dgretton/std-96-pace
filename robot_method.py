@@ -36,6 +36,7 @@ def ensure_meas_table_exists(db_conn):
     db_conn.commit()
 
 def db_add_plate_data(plate_data, data_type, plate, vessel_numbers, read_wells):
+    plate_data.wait_for_file()
     db_conn = sqlite3.connect(os.path.join(method_local_dir, containing_dirname + '.db'))
     ensure_meas_table_exists(db_conn)
     c = db_conn.cursor()
@@ -77,7 +78,7 @@ if __name__ == '__main__':
     cycle_replace_vol = 333 # uL
     read_sample_vol = 100 # uL
     assert read_sample_vol < cycle_replace_vol
-    generation_time = 20 * 60 # seconds
+    generation_time = 30 * 60 # seconds
     fixed_lagoon_height = 19 # mm for 500uL lagoons
     lagoon_fly_disp_height = fixed_lagoon_height + 18 # mm
     wash_vol = max_transfer_vol # uL
@@ -89,6 +90,7 @@ if __name__ == '__main__':
     mixing_tips = lmgr.assign_unused_resource(ResourceType(Tip96, 'lagoon_tips'))
     inducer_site = lmgr.assign_unused_resource(ResourceType(Plate96, 'inducer'))
     reader_plate_site = lmgr.assign_unused_resource(ResourceType(Plate96, 'read_plate_site'))
+    bleach_bath = lmgr.assign_unused_resource(ResourceType(Plate96, 'bleach_bath'))
     plate_trash = lmgr.assign_unused_resource(ResourceType(Plate96, 'plate_trash'))
     reader_plates = resource_list_with_prefix(lmgr, 'reader_plate_', Plate96, num_reader_plates, reverse=True)
     culture_reservoir = lmgr.assign_unused_resource(ResourceType(Plate96, 'waffle'))
@@ -150,12 +152,15 @@ if __name__ == '__main__':
 
     def bleach_mounted_tips(ham_int, destination=None):
         logging.info('\n##### Bleaching currently mounted tips' + (' and depositing at ' + destination.layout_name() if destination else '') + '.')
+        small_vol = 10
+        logging.info('\n##### Dunking in bleach bath.')
+        aspirate_96(ham_int, bleach_bath, small_vol, liquidHeight=4, airTransportRetractDist=30)
+        dispense_96(ham_int, bleach_bath, small_vol, dispenseMode=9, liquidHeight=4, airTransportRetractDist=30) # mode: blowout
         if not sys_state.disable_pumps:
             logging.info('\n##### Refilling water and bleach.')
             wash_empty_refill(ham_int, refillAfterEmpty=1, # 1=Refill both chambers
                                        chamber1WashLiquid=1, # 1=liquid 2 (blue container) (water)
                                        chamber2WashLiquid=0) # 0=Liquid 1 (red container) (bleach)
-        small_vol = 10
         logging.info('\n##### Bleaching.')
         aspirate_96(ham_int, bleach_site, small_vol, mixCycles=2, mixPosition=1, mixVolume=wash_vol, airTransportRetractDist=30)
         dispense_96(ham_int, bleach_site, small_vol, dispenseMode=9, liquidHeight=10, airTransportRetractDist=30) # mode: blowout
@@ -298,7 +303,7 @@ if __name__ == '__main__':
             target_time += 1 if simulation_on else interval
 
     schedule_items = [ # tuples (blocking function to schedule, monotonic absolute time generator)
-        (trip_read_plate, times_at_intervals(generation_time * 6, delay=-1)), # read plate every few cycles
+        (trip_read_plate, times_at_intervals(generation_time * 6, delay=-1 if not mid_run else generation_time * 6)), # read plate every few cycles
         (service_lagoons, times_at_intervals(generation_time)),
         ]
 

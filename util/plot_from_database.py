@@ -43,7 +43,6 @@ for type in ['lum', 'abs']:
             c.execute('SELECT filename, well, reading FROM measurements WHERE well=? AND data_type=?', n)
    
             x = c.fetchall()
-            print(len(x), "entries fetched")
             vals = [(datetime.strptime(f[-15:-4], '%y%m%d_%H%M'), w, v) for (f, w, v) in x]
             #pdb.set_trace()
             vals = [(t, w, v) for t, w, v in vals if t > datetime(2018, 11, 1, 18, 15)] 
@@ -55,7 +54,7 @@ for type in ['lum', 'abs']:
             if type == 'abs':
                 plt.ylim(0.0, 1.0)
             else:
-                plt.ylim(450, 4000.0)
+                plt.ylim(300, 2000)
         
             # decrease number of plotted X axis labels
             # make there be fewer labels so that you can read them
@@ -65,6 +64,7 @@ for type in ['lum', 'abs']:
             labels_sparse = [labels[x] if x % 6 == 0 else '' for x in range(len(labels))]
             plt.xticks(times, labels_sparse)
             locs, labels = plt.xticks()
+        print(len(x), "entries fetched")
     
     fig1.tight_layout()
     plt.savefig(os.path.join(db_dir, 'plot_' + type + ".png"), dpi = 200)

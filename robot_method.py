@@ -68,8 +68,11 @@ if __name__ == '__main__':
     num_disp_tip_racks = 6
     num_disp_lagoons = 4
     assert num_disp_lagoons <= 8
-    num_lagoons = 8*11 + num_disp_lagoons
-    lagoons = range(num_lagoons)
+    num_reused_lagoons = 8*10
+    assert num_reused_lagoons <= 8*11 # reserve last column for disposable tip lagoons
+    assert num_reused_lagoons % 8 == 0 # Specific to this implementation
+    lagoons = range(num_reused_lagoons + num_disp_lagoons)
+    num_reuses = 2
     culture_supply_vol = 50 # mL
     # inducer_vol = 200 # uL
     max_transfer_vol = 985 # uL
@@ -127,9 +130,19 @@ if __name__ == '__main__':
     def disp_tips_gen():
         while True:
             for disp_tip_rack in disp_tips:
-                for i in range(0, 96, num_disp_lagoons):
-                    yield [(disp_tip_rack, i+j) for j in range(num_disp_lagoons)]
+                for i in range(0, 96):
+                    yield disp_tip_rack, i
     disp_tips_gen = disp_tips_gen()
+
+    def disp_lagoon_tips_gen():
+        while True:
+            yield [next(disp_tips_gen) for _ in range(num_disp_lagoons)]
+    disp_lagoon_tips_gen = disp_lagoon_tips_gen()
+
+    def replace_tips_gen():
+        while True:
+            yield [next(disp_tips_gen) for _ in range(8)] # 1 per channel
+    replace_tips_gen = replace_tips_gen()
 
     def change_96_tips(ham_int, new_tips): # None is an acceptable argument
         if sys_state.mounted_tips is new_tips or sys_state.mounted_tips == new_tips:
@@ -187,6 +200,19 @@ if __name__ == '__main__':
         pump_int.bleach_clean()
         shaker.stop()
 
+    def replace_mix_tips(ham_int, pump_int, reader_int):
+        change_96_tips(ham_int, mixing_tips)
+        put_96_tips(ham_int, DEFAULT_WASTE, immediately=True)
+        for col in range(num_reused_lagoons/8):
+            while True:
+                try:
+                    tip_pick_up(ham_int, next(replace_tips_gen))
+                    break
+                except pyhamilton.NoTipError:
+                    continue
+            tip_eject(ham_int, list(zip([mixing_tips]*8, range(col*8, (col+1)*8))))
+        
+
     def service_lagoons(ham_int, pump_int, reader_int):
         logging.info('\n\n##### ------------------ Servicing lagoons ------------------')
 
@@ -201,7 +227,7 @@ if __name__ == '__main__':
         #liq_class_300uL = 'StandardVolumeFilter_Water_DispenseJet_Empty_with_transport_vol'
         while True:
             try:
-                tip_pick_up(ham_int, next(disp_tips_gen))
+                tip_pick_up(ham_int, next(disp_lagoon_tips_gen))
                 break
             except pyhamilton.NoTipError:
                 continue
@@ -303,6 +329,7 @@ if __name__ == '__main__':
             target_time += 1 if simulation_on else interval
 
     schedule_items = [ # tuples (blocking function to schedule, monotonic absolute time generator)
+        (trip_replace_tips, times_at_intervals(generation_time * num_reuses, delay=-2)), # replace reusable tips every num_reuses cycles
         (trip_read_plate, times_at_intervals(generation_time * 6, delay=-1 if not mid_run else generation_time * 6)), # read plate every few cycles
         (service_lagoons, times_at_intervals(generation_time)),
         ]
